@@ -1,4 +1,4 @@
-import { Program } from './src/Program';
+import { Program } from "./src/program";
 
 let program = new Program();
 program.run();

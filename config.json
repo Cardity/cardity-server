@@ -1,0 +1,9 @@
+{
+    "httpPort": 8088,
+    
+    "sslPort": 8448,
+    "sslCert": "/Users/peterlohse/git/cah/ssl/fullchain.pem",
+    "sslKey": "/Users/peterlohse/git/cah/ssl/privkey.pem",
+
+    "hostname": "cah.testsrv.de"
+}

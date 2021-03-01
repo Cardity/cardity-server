@@ -1,0 +1,61 @@
+import * as fs from "fs";
+import * as http from "http";
+import { Global } from "../../global";
+
+export class RequestHandler {
+    protected req: http.IncomingMessage;
+
+    protected res: http.ServerResponse;
+
+    static cachedFiles: { [key: string]: Buffer } = {};
+
+    constructor(req: http.IncomingMessage, res: http.ServerResponse) {
+        this.req = req;
+        this.res = res;
+    }
+
+    handle() {
+        let filename: string = "/index.html";
+        if (this.req.url != null && this.req.url != "/") {
+            filename = this.req.url;
+        }
+
+        const requestFile: string = Global.programPath + "../web" + filename;
+        if (fs.existsSync(requestFile) && fs.lstatSync(requestFile).isFile()) {
+            this.showFile(requestFile);
+        } else {
+            this.res.writeHead(404, {
+                "Content-Type": "text/html"
+            });
+            this.res.end("<h1>404 Not Found</h1>");
+        }
+    }
+
+    protected showFile(requestFile: string) {
+        let contentType = "text/html";
+        if (requestFile.endsWith(".html")) {
+            contentType = "text/html";
+        } else if (requestFile.endsWith(".css")) {
+            contentType = "text/css";
+        } else if (requestFile.endsWith(".js")) {
+            contentType = "text/javascript";
+        } else if (requestFile.endsWith(".png")) {
+            contentType = "image/png";
+        } else if (requestFile.endsWith(".jpg")) {
+            contentType = "image/jpeg";
+        }
+
+        this.res.writeHead(200, {
+            "Content-Type": contentType
+        });
+        this.res.end(this.getFile(requestFile));
+    }
+
+    protected getFile(requestFile: string): Buffer {
+        return fs.readFileSync(requestFile);
+        if (RequestHandler.cachedFiles[requestFile] == null) {
+            RequestHandler.cachedFiles[requestFile] = fs.readFileSync(requestFile);
+        }
+        return RequestHandler.cachedFiles[requestFile];
+    }
+}
