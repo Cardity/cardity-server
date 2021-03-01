@@ -14,7 +14,7 @@ export class HTTPServer {
 
     protected handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
         res.writeHead(301, {
-            'Location': 'https://' + config.hostname + ((config.sslPort != 443) ? ':' + config.sslPort : '') + '/'
+            "Location": "https://" + config.hostname + ((config.sslPort != 443) ? ":" + config.sslPort : "") + "/"
         });
         res.end();
     }

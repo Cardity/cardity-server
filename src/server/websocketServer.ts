@@ -1,5 +1,6 @@
 import * as https from "https";
 import * as WebSocket from 'ws';
+import { MessageHandler } from "../request/messageHandler";
 
 export class WebsocketServer {
     static server: WebSocket.Server;
@@ -12,8 +13,13 @@ export class WebsocketServer {
     }
 
     protected onConnection(socket: WebSocket) {
-        console.log(socket);
-        console.log("Client connected.");
-        socket.send("hallo");
+        socket.on("message", function(data: WebSocket.Data) {
+            let messageHandler = new MessageHandler(socket, data);
+            messageHandler.handle();
+        });
+
+        socket.on("close", function(code: number, reason: string) {
+            console.log("client closed");
+        });
     }
 }

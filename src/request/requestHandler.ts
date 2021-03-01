@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as http from "http";
+import * as config from "./../../config.json";
 import { Global } from "../../global";
 
 export class RequestHandler {
@@ -7,7 +8,7 @@ export class RequestHandler {
 
     protected res: http.ServerResponse;
 
-    static cachedFiles: { [key: string]: Buffer } = {};
+    static cachedFiles: { [key: string]: string } = {};
 
     constructor(req: http.IncomingMessage, res: http.ServerResponse) {
         this.req = req;
@@ -48,14 +49,22 @@ export class RequestHandler {
         this.res.writeHead(200, {
             "Content-Type": contentType
         });
-        this.res.end(this.getFile(requestFile));
+        let fileData: string = this.getFile(requestFile);
+        fileData = this.compileFile(fileData);
+        this.res.end(fileData);
     }
 
-    protected getFile(requestFile: string): Buffer {
-        return fs.readFileSync(requestFile);
+    protected getFile(requestFile: string): string {
+        return fs.readFileSync(requestFile).toString();
         if (RequestHandler.cachedFiles[requestFile] == null) {
-            RequestHandler.cachedFiles[requestFile] = fs.readFileSync(requestFile);
+            RequestHandler.cachedFiles[requestFile] = fs.readFileSync(requestFile).toString();
         }
         return RequestHandler.cachedFiles[requestFile];
+    }
+
+    protected compileFile(fileData: string): string {
+        fileData = fileData.replace("{WEBSOCKET_PATH}", "wss://" + config.hostname + ((config.sslPort != 443) ? ":" + config.sslPort : "") + "/");
+
+        return fileData;
     }
 }
