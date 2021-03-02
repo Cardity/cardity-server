@@ -6,5 +6,5 @@
     "sslKey": "/Users/peterlohse/git/cah/ssl/privkey.pem",
 
     "hostname": "cah.testsrv.de",
-    "webPath": ""
+    "webPath": "/Users/peterlohse/git/cah_web/src/"
 }
