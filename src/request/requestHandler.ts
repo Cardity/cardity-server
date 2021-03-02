@@ -1,7 +1,6 @@
 import * as fs from "fs";
 import * as http from "http";
 import * as config from "./../../config.json";
-import { Global } from "../../global";
 
 export class RequestHandler {
     protected req: http.IncomingMessage;
@@ -20,8 +19,9 @@ export class RequestHandler {
         if (this.req.url != null && this.req.url != "/") {
             filename = this.req.url;
         }
+        filename = filename.replace("../", "");
 
-        const requestFile: string = Global.programPath + "../web" + filename;
+        const requestFile: string = config.webPath + filename;
         if (fs.existsSync(requestFile) && fs.lstatSync(requestFile).isFile()) {
             this.showFile(requestFile);
         } else {
@@ -33,7 +33,7 @@ export class RequestHandler {
     }
 
     protected showFile(requestFile: string) {
-        let contentType = "text/html";
+        let contentType = "text/plain";
         if (requestFile.endsWith(".html")) {
             contentType = "text/html";
         } else if (requestFile.endsWith(".css")) {
