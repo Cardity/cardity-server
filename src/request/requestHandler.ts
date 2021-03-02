@@ -40,6 +40,8 @@ export class RequestHandler {
             contentType = "text/css";
         } else if (requestFile.endsWith(".js")) {
             contentType = "text/javascript";
+        } else if (requestFile.endsWith(".svg")) {
+            contentType = "image/svg+xml";
         } else if (requestFile.endsWith(".png")) {
             contentType = "image/png";
         } else if (requestFile.endsWith(".jpg")) {
