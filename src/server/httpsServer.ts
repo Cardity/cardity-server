@@ -15,7 +15,8 @@ export class HTTPSServer {
     }
 
     start() {
-        this.server.listen(config.sslPort, config.hostname, this.serverIsRunning.bind(this));
+        // this.server.listen(config.sslPort, config.hostname, this.serverIsRunning.bind(this));
+        this.server.listen(config.sslPort, this.serverIsRunning.bind(this))
     }
 
     getServer(): https.Server {

@@ -26,16 +26,17 @@ export class RequestHandler {
             this.showFile(requestFile);
         } else {
             this.res.writeHead(404, {
-                "Content-Type": "text/html"
+                "Content-Type": "text/html; charset=utf-8",
+                "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload" // hstspreload
             });
             this.res.end("<h1>404 Not Found</h1>");
         }
     }
 
     protected showFile(requestFile: string) {
-        let contentType = "text/plain";
+        let contentType = "text/plain; charset=utf-8";
         if (requestFile.endsWith(".html")) {
-            contentType = "text/html";
+            contentType = "text/html; charset=utf-8";
         } else if (requestFile.endsWith(".css")) {
             contentType = "text/css";
         } else if (requestFile.endsWith(".js")) {
@@ -49,7 +50,8 @@ export class RequestHandler {
         }
 
         this.res.writeHead(200, {
-            "Content-Type": contentType
+            "Content-Type": contentType,
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload" // hstspreload
         });
         let fileData: string = this.getFile(requestFile);
         fileData = this.compileFile(fileData);

@@ -9,7 +9,7 @@ export class HTTPServer {
     }
 
     start() {
-        this.server.listen(config.httpPort, config.hostname, this.serverIsRunning.bind(this));
+        this.server.listen(config.httpPort, this.serverIsRunning.bind(this));
     }
 
     protected handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
