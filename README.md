@@ -8,7 +8,7 @@ https://github.com/basarat/typescript-book/blob/master/docs/styleguide/styleguid
 
 OP-Code | Richtung        | Beschreibung
 --------|-----------------|--------------
-1       | Client > Server | Hallo persönlicher Session-ID
+1       | Client > Server | Hallo
 2       | Client < Server | Antwort auf 1 mit Heartbeat Interval
 3       | Client > Server | Heartbeat
 4       | Client < Server | Heartbeat Antwort
