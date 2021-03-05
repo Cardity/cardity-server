@@ -16,8 +16,8 @@ export default class Player {
     }
 
     static getPlayer(key: string): Player | null {
-        if (this.players[key] != null) {
-            return this.players[key];
+        if (Player.players[key] != null) {
+            return Player.players[key];
         }
         return null;
     }
