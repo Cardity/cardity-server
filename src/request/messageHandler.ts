@@ -1,16 +1,14 @@
 import * as WebSocket from "ws";
-import WebsocketServer from "../server/websocketServer";
+import Player from "../game/player";
 import DateUtil from "../util/dateUtil";
 
 export default class MessageHandler {
-    protected socket: WebSocket;
+    protected player: Player | null;
     protected data: WebSocket.Data;
-    protected key: string;
 
-    constructor(socket: WebSocket, data: WebSocket.Data, key: string) {
-        this.socket = socket;
+    constructor(player: Player, data: WebSocket.Data) {
+        this.player = player;
         this.data = data;
-        this.key = key;
     }
 
     handle() {
@@ -26,24 +24,46 @@ export default class MessageHandler {
                 this.handleHeartbeat();
                 break;
             }
+            case 5: {
+                this.handleRequest(data.t, data.d);
+                break;
+            }
         }
     }
 
-    protected handleHello() {
-        let data = {
-            "o": 2
-        };
-        this.socket.send(JSON.stringify(data));
+    protected send(type: string | null, data: { [key: string]: any } | null, operation: number = 5) {
+        let requestData: { [key: string]: any } = {
+            "o": operation
+        }
+        if (type != null && type && type.length > 0) {
+            requestData["t"] = type;
+        }
+        if (data != null) {
+            requestData["d"] = data;
+        }
+        if (this.player?.getSocket().readyState != WebSocket.OPEN) {
+            return;
+        }
+        this.player?.getSocket().send(JSON.stringify(requestData));
+    }
 
-        WebsocketServer.heartbeatClients[this.key] = DateUtil.getCurrentTimestamp();
+    protected handleHello() {
+        this.send(null, null, 2)
+
+        if (this.player != null) {
+            this.player.lastHeartbeat = DateUtil.getCurrentTimestamp();
+        }
     }
 
     protected handleHeartbeat() {
-        let data = {
-            "o": 4
-        };
-        this.socket.send(JSON.stringify(data));
+        this.send(null, null, 4)
 
-        WebsocketServer.heartbeatClients[this.key] = DateUtil.getCurrentTimestamp();
+        if (this.player != null) {
+            this.player.lastHeartbeat = DateUtil.getCurrentTimestamp();
+        }
+    }
+
+    protected handleRequest(type: string | null, data: any | null) {
+
     }
 }

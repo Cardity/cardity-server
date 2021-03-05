@@ -1,31 +1,25 @@
 import * as WebSocket from 'ws';
 
 export default class Player {
+    static players: { [ key: string]: Player } = {};
+
     protected playerKey: string;
     protected socket: WebSocket;
 
-    protected gameID: string = "";
-    protected name: string = "";
+    public gameID: string = "";
+    public name: string = "";
+    public lastHeartbeat: number = 0;
 
     constructor(playerKey: string, socket: WebSocket) {
         this.playerKey = playerKey;
         this.socket = socket;
     }
 
-    public setName(name: string) {
-        this.name = name;
-    }
-
-    public getName(): string {
-        return this.name;
-    }
-
-    public setGameID(gameID: string) {
-        this.gameID = gameID;
-    }
-
-    public getGameID(): string {
-        return this.gameID;
+    static getPlayer(key: string): Player | null {
+        if (this.players[key] != null) {
+            return this.players[key];
+        }
+        return null;
     }
 
     public getGame() {

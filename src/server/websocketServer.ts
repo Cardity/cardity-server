@@ -8,10 +8,6 @@ import DateUtil from "../util/dateUtil";
 export default class WebsocketServer {
     static server: WebSocket.Server;
 
-    static heartbeatClients: { [key: string]: number } = {};
-
-    static clients: { [key: string]: Player } = {};
-
     constructor(server: https.Server) {
         WebsocketServer.server = new WebSocket.Server({ server: server });
         WebsocketServer.server.on("connection", this.onConnection.bind(this));
@@ -21,20 +17,17 @@ export default class WebsocketServer {
 
     protected onConnection(socket: WebSocket, req: IncomingMessage) {
         let key: string = req.headers["sec-websocket-key"]!;
-        WebsocketServer.clients[key] = new Player(key, socket);
+        Player.players[key] = new Player(key, socket);
 
         socket.on("message", function(data: WebSocket.Data) {
-            let messageHandler = new MessageHandler(socket, data, key);
+            let messageHandler = new MessageHandler(Player.players[key], data);
             messageHandler.handle();
         });
 
         socket.on("close", function(code: number, reason: string) {
             console.log("client closed: (" + code + ") " + reason);
-            if (WebsocketServer.heartbeatClients[key] != null) {
-                delete WebsocketServer.heartbeatClients[key];
-            }
-            if (WebsocketServer.clients[key] != null) {
-                delete WebsocketServer.clients[key];
+            if (Player.players[key] != null) {
+                delete Player.players[key];
             }
         });
 
@@ -43,20 +36,20 @@ export default class WebsocketServer {
 
     protected heartbeatCheck(socket: WebSocket, key: string) {
         if (socket.readyState != WebSocket.OPEN) {
-            if (WebsocketServer.heartbeatClients[key] != null) {
-                delete WebsocketServer.heartbeatClients[key];
+            if (Player.players[key] != null) {
+                delete Player.players[key];
             }
             return;
         }
 
-        if (WebsocketServer.heartbeatClients[key] == null) {
+        if (Player.players[key] == null) {
             socket.close();
             return;
         }
 
-        if (WebsocketServer.heartbeatClients[key] + 50 < DateUtil.getCurrentTimestamp()) {
+        if (Player.players[key].lastHeartbeat + 50 < DateUtil.getCurrentTimestamp()) {
             socket.close();
-            delete WebsocketServer.heartbeatClients[key];
+            delete Player.players[key];
             return;
         }
 

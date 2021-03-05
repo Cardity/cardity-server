@@ -1,3 +1,3 @@
 export default class Game {
-    static games: { [gameID: string]: Game } = {};
+    public static games: { [gameID: string]: Game } = {};
 }
