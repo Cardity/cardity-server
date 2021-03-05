@@ -15,11 +15,31 @@ export default class Player {
         this.socket = socket;
     }
 
-    static getPlayer(key: string): Player | null {
-        if (Player.players[key] != null) {
-            return Player.players[key];
+    public send(type: string | null, data: { [key: string]: any } | null, operation: number = 6) {
+        let requestData: { [key: string]: any } = {
+            "o": operation
         }
-        return null;
+        if (type != null && type && type.length > 0) {
+            requestData["t"] = type;
+        }
+        if (data != null) {
+            requestData["d"] = data;
+        }
+        if (this.socket.readyState != WebSocket.OPEN) {
+            return;
+        }
+        this.socket.send(JSON.stringify(requestData));
+    }
+
+    static getPlayer(key: string): Player | null {
+        return Player.players[key];
+    }
+
+    public setPlayername(name: string) {
+        this.name = name;
+        this.send("CHANGE_NICKNAME", {
+            name: name
+        });
     }
 
     public getGame() {
