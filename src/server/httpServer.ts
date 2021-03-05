@@ -1,7 +1,7 @@
 import * as http from "http";
 import * as config from "./../../config.json";
 
-export class HTTPServer {
+export default class HTTPServer {
     protected server: http.Server;
 
     constructor() {

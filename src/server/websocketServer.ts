@@ -1,13 +1,16 @@
 import { IncomingMessage } from "http";
 import * as https from "https";
 import * as WebSocket from 'ws';
-import { MessageHandler } from "../request/messageHandler";
-import { DateUtil } from "../util/dateUtil";
+import Player from "../game/player";
+import MessageHandler from "../request/messageHandler";
+import DateUtil from "../util/dateUtil";
 
-export class WebsocketServer {
+export default class WebsocketServer {
     static server: WebSocket.Server;
 
     static heartbeatClients: { [key: string]: number } = {};
+
+    static clients: { [key: string]: Player } = {};
 
     constructor(server: https.Server) {
         WebsocketServer.server = new WebSocket.Server({ server: server });
@@ -18,6 +21,7 @@ export class WebsocketServer {
 
     protected onConnection(socket: WebSocket, req: IncomingMessage) {
         let key: string = req.headers["sec-websocket-key"]!;
+        WebsocketServer.clients[key] = new Player(key, socket);
 
         socket.on("message", function(data: WebSocket.Data) {
             let messageHandler = new MessageHandler(socket, data, key);
@@ -25,9 +29,12 @@ export class WebsocketServer {
         });
 
         socket.on("close", function(code: number, reason: string) {
-            console.log("client closed");
+            console.log("client closed: (" + code + ") " + reason);
             if (WebsocketServer.heartbeatClients[key] != null) {
                 delete WebsocketServer.heartbeatClients[key];
+            }
+            if (WebsocketServer.clients[key] != null) {
+                delete WebsocketServer.clients[key];
             }
         });
 

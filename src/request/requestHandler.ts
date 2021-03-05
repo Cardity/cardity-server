@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as http from "http";
 import * as config from "./../../config.json";
 
-export class RequestHandler {
+export default class RequestHandler {
     protected req: http.IncomingMessage;
 
     protected res: http.ServerResponse;

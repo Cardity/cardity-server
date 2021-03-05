@@ -1,8 +1,8 @@
-import { HTTPServer } from "./server/httpServer";
-import { HTTPSServer } from "./server/httpsServer";
-import { WebsocketServer } from "./server/websocketServer";
+import HTTPServer from "./server/httpServer";
+import HTTPSServer from "./server/httpsServer";
+import WebsocketServer from "./server/websocketServer";
 
-export class Program {
+export default class Program {
     run() {
         this.startHttpServer();
         this.startHttpsServer();

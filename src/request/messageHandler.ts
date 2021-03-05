@@ -1,8 +1,8 @@
 import * as WebSocket from "ws";
-import { WebsocketServer } from "../server/websocketServer";
-import { DateUtil } from "../util/dateUtil";
+import WebsocketServer from "../server/websocketServer";
+import DateUtil from "../util/dateUtil";
 
-export class MessageHandler {
+export default class MessageHandler {
     protected socket: WebSocket;
     protected data: WebSocket.Data;
     protected key: string;

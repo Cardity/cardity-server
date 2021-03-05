@@ -2,9 +2,9 @@ import * as config from "./../../config.json";
 import * as fs from "fs";
 import * as http from "http";
 import * as https from "https";
-import { RequestHandler } from "../request/requestHandler";
+import RequestHandler from "../request/requestHandler";
 
-export class HTTPSServer {
+export default class HTTPSServer {
     protected server: https.Server;
 
     constructor() {
