@@ -25,7 +25,11 @@ export default class ClientRequestHandler {
                 break;
             }
             case "KICK_PLAYER": {
-                this.kickPlayer();
+                this.kickPlayerHandler();
+                break;
+            }
+            case "SEND_CHAT": {
+                this.sendChatHandler();
                 break;
             }
         }
@@ -118,12 +122,12 @@ export default class ClientRequestHandler {
         return Game.games[gameID].getObject();
     }
 
-    protected kickPlayer() {
+    protected kickPlayerHandler() {
         let game: Game | null = this.player.getGame();
         if (game == null) {
             return;
         }
-        if (this.player.getKey() != game.hostKey) {
+        if (!this.player.isHost()) {
             return;
         }
 
@@ -139,5 +143,21 @@ export default class ClientRequestHandler {
             return;
         }
         game.clients[removeKey].getSocket().close();
+    }
+
+    protected sendChatHandler() {
+        let message: string = "";
+        if (this.data != null && this.data["message"] != null) {
+            message = this.data["message"];
+        }
+        if (!message) {
+            return;
+        }
+
+        this.player.getGame()?.sendAll("CHAT_MESSAGE", {
+            isHost: this.player.isHost(),
+            name: this.player.name,
+            message: message
+        });
     }
 }

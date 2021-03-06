@@ -17,7 +17,7 @@ export default class Game {
         this.hostKey = hostKey;
     }
 
-    protected sendAll(type: string | null, data: { [key: string]: any } | null) {
+    public sendAll(type: string | null, data: { [key: string]: any } | null) {
         for(let key in this.clients) {
             this.clients[key].send(type, data);
         }

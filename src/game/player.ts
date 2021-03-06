@@ -63,4 +63,8 @@ export default class Player {
     public getSocket(): WebSocket {
         return this.socket;
     }
+
+    public isHost(): boolean {
+        return this.playerKey == this.getGame()?.hostKey;
+    }
 }
