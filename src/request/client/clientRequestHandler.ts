@@ -20,6 +20,10 @@ export default class ClientRequestHandler {
                 returnData = this.createGameHandler()
                 break;
             }
+            case "JOIN_GAME": {
+                returnData = this.joinGameHandler()
+                break;
+            }
         }
         return returnData;
     }
@@ -66,5 +70,47 @@ export default class ClientRequestHandler {
 
         Game.games[gameID] = game;
         return game.getObject();
+    }
+
+    protected joinGameHandler(): { [key: string]: any } {
+        let nickname: string = CryptoUtil.createRandomString(8);
+        let gameID: string = "";
+        let password: string = "";
+
+        if (this.data != null) {
+            for(let key in this.data) {
+                switch (key) {
+                    case "nickname": {
+                        nickname = this.data[key];
+                        break;
+                    }
+                    case "gameID": {
+                        gameID = this.data[key];
+                        break;
+                    }
+                    case "password": {
+                        password = this.data[key];
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (Game.games[gameID] == null) {
+            return {
+                errorField: "gameID",
+                errorMessage: "Es existiert kein Spiel mit diesem Code."
+            }
+        }
+        if (Game.games[gameID].password && Game.games[gameID].password !== password) {
+            return {
+                errorField: "password",
+                errorMessage: "Das eingegebene Passwort ist falsch."
+            }
+        }
+        this.player.setPlayername(nickname);
+
+        Game.games[gameID].addPlayer(this.player);
+        return Game.games[gameID].getObject();
     }
 }

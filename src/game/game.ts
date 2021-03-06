@@ -17,6 +17,12 @@ export default class Game {
         this.hostKey = hostKey;
     }
 
+    protected sendAll(type: string | null, data: { [key: string]: any } | null) {
+        for(let key in this.clients) {
+            this.clients[key].send(type, data);
+        }
+    }
+
     public getObject(): { [key: string]: any } {
         let players: { [key: string]: string } = {};
         for (let key in this.clients) {
@@ -38,6 +44,8 @@ export default class Game {
 
     public addPlayer(player: Player) {
         this.clients[player.getKey()] = player;
+
+        this.sendAll("CHANGE_GAME", this.getObject());
     }
 
     static getGame(gameID: string): Game | null {
