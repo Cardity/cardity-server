@@ -16,12 +16,25 @@ export default class WebsocketServer {
     }
 
     protected onConnection(socket: WebSocket, req: IncomingMessage) {
-        let key: string = req.headers["sec-websocket-key"]!;
+        if (typeof req.headers["sec-websocket-key"] !== "string") {
+            socket.close();
+            return;
+        }
+        
+        let key: string = req.headers["sec-websocket-key"];
         Player.players[key] = new Player(key, socket);
 
         socket.on("message", function(data: WebSocket.Data) {
-            let messageHandler = new MessageHandler(Player.players[key], data);
-            messageHandler.handle();
+            try {
+                let messageHandler = new MessageHandler(Player.players[key], data);
+                messageHandler.handle();
+            } catch (e: unknown) {
+                if (typeof e === "string") {
+                    console.log(e);
+                } else if (e instanceof Error) {
+                    console.log(e.message);
+                }
+            }
         });
 
         socket.on("close", function(code: number, reason: string) {
