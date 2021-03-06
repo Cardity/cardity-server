@@ -35,11 +35,17 @@ export default class Player {
         return Player.players[key];
     }
 
+    public getObject(): { [key: string]: any } {
+        return {
+            key: this.playerKey,
+            gameID: this.gameID,
+            name: this.name
+        }
+    }
+
     public setPlayername(name: string) {
         this.name = name;
-        this.send("CHANGE_NICKNAME", {
-            name: name
-        });
+        this.send("CHANGE_PLAYER", this.getObject());
     }
 
     public getGame() {
