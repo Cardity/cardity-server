@@ -39,8 +39,8 @@ export default class WebsocketServer {
 
         socket.on("close", function(code: number, reason: string) {
             console.log("client closed: (" + code + ") " + reason);
-            Player.players[key].getGame()?.removePlayer(key);
             if (Player.players[key] != null) {
+                Player.players[key].getGame()?.removePlayer(key);
                 delete Player.players[key];
             }
         });
