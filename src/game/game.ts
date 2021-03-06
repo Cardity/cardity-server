@@ -23,6 +23,10 @@ export default class Game {
         }
     }
 
+    public sendChangeGame() {
+        this.sendAll("CHANGE_GAME", this.getObject());
+    }
+
     public getObject(): { [key: string]: any } {
         let players: { [key: string]: string } = {};
         for (let key in this.clients) {
@@ -44,8 +48,18 @@ export default class Game {
 
     public addPlayer(player: Player) {
         this.clients[player.getKey()] = player;
+        player.gameID = this.gameID;
 
-        this.sendAll("CHANGE_GAME", this.getObject());
+        this.sendChangeGame();
+    }
+
+    public removePlayer(key: string) {
+        if (this.clients[key] == null) {
+            return;
+        }
+
+        delete this.clients[key];
+        this.sendChangeGame();
     }
 
     static getGame(gameID: string): Game | null {

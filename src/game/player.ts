@@ -1,4 +1,5 @@
 import * as WebSocket from 'ws';
+import Game from './game';
 
 export default class Player {
     static players: { [ key: string]: Player } = {};
@@ -48,8 +49,11 @@ export default class Player {
         this.send("CHANGE_PLAYER", this.getObject());
     }
 
-    public getGame() {
-        // TODO: implement
+    public getGame(): Game | null {
+        if (!this.gameID) {
+            return null;
+        }
+        return Game.games[this.gameID];
     }
 
     public getKey(): string {

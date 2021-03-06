@@ -24,6 +24,10 @@ export default class ClientRequestHandler {
                 returnData = this.joinGameHandler()
                 break;
             }
+            case "KICK_PLAYER": {
+                this.kickPlayer();
+                break;
+            }
         }
         return returnData;
     }
@@ -112,5 +116,28 @@ export default class ClientRequestHandler {
 
         Game.games[gameID].addPlayer(this.player);
         return Game.games[gameID].getObject();
+    }
+
+    protected kickPlayer() {
+        let game: Game | null = this.player.getGame();
+        if (game == null) {
+            return;
+        }
+        if (this.player.getKey() != game.hostKey) {
+            return;
+        }
+
+        let removeKey: string = "";
+        if (this.data != null && this.data["key"] != null) {
+            removeKey = this.data["key"];
+        }
+        if (!removeKey) {
+            return;
+        }
+
+        if (game.clients[removeKey] == null) {
+            return;
+        }
+        game.clients[removeKey].getSocket().close();
     }
 }
