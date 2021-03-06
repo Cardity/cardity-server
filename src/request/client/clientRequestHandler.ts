@@ -20,6 +20,10 @@ export default class ClientRequestHandler {
                 returnData = this.createGameHandler()
                 break;
             }
+            case "GAME_UPDATE": {
+                returnData = this.gameUpdateHandler()
+                break;
+            }
             case "JOIN_GAME": {
                 returnData = this.joinGameHandler()
                 break;
@@ -41,9 +45,6 @@ export default class ClientRequestHandler {
         let game: Game = new Game(gameID, this.player.getKey());
         let nickname: string = CryptoUtil.createRandomString(8);
         if (this.data != null) {
-            if (this.data["nickname"] != null) {
-                nickname = this.data["nickname"];
-            }
             for(let key in this.data) {
                 switch (key) {
                     case "nickname": {
@@ -110,6 +111,7 @@ export default class ClientRequestHandler {
                 errorMessage: "Es existiert kein Spiel mit diesem Code."
             }
         }
+        // TODO: checke ob Raum bereits voll ist
         if (Game.games[gameID].password && Game.games[gameID].password !== password) {
             return {
                 errorField: "password",
@@ -159,5 +161,42 @@ export default class ClientRequestHandler {
             name: this.player.name,
             message: message
         });
+    }
+
+    protected gameUpdateHandler(): { [key: string]: any } {
+        let game: Game | null = this.player.getGame();
+        if (game == null) {
+            return {};
+        }
+        if (!this.player.isHost()) {
+            return {};
+        }
+
+        if (this.data != null) {
+            for(let key in this.data) {
+                switch (key) {
+                    case "maxPlayers": {
+                        game.maxPlayers = this.data[key];
+                        break;
+                    }
+                    case "secondsPerRound": {
+                        game.secondsPerRound = this.data[key];
+                        break;
+                    }
+                    case "cardDecks": {
+                        game.cardDecks = this.data[key];
+                        break;
+                    }
+                    case "houseRules": {
+                        game.houseRules = this.data[key];
+                        break;
+                    }
+                }
+            }
+        }
+
+        game.sendChangeGame();
+
+        return game.getObject();
     }
 }
