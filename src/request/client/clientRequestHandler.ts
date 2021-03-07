@@ -277,7 +277,8 @@ export default class ClientRequestHandler {
 
         game.clients[winnerClient].points++;
         game.sendAll("PLAYER_WON", {
-            name: game.clients[winnerClient].name
+            name: game.clients[winnerClient].name,
+            key: game.clients[winnerClient].getKey()
         })
         // TODO: anzeigen wer gewonnen hat
         game.startPhase4();

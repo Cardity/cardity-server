@@ -271,6 +271,6 @@ export default class Game {
             client.selectedCards = [];
         }
 
-        this.startPhase1();
+        setTimeout(this.startPhase1.bind(this), 10000);
     }
 }
