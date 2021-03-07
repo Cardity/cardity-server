@@ -36,6 +36,10 @@ export default class ClientRequestHandler {
                 this.sendChatHandler();
                 break;
             }
+            case "GAME_START": {
+                this.startGameHandler();
+                break;
+            }
         }
         return returnData;
     }
@@ -199,5 +203,17 @@ export default class ClientRequestHandler {
         game.sendChangeGame();
 
         return game.getObject();
+    }
+
+    protected startGameHandler() {
+        let game = this.player.getGame();
+        if (game == null) {
+            return;
+        }
+        game.isRunning = true;
+        game.generateDecks();
+        game.sendChangeGame();
+
+        game.sendAll("START_GAME", null);
     }
 }

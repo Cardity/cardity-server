@@ -1,3 +1,4 @@
+import Deck from "./deck";
 import Player from "./player";
 
 interface IPlayer {
@@ -19,6 +20,7 @@ export default class Game {
     public secondsPerRound: number = 90;
     public cardDecks: string[] = ["1"];
     public houseRules: number = 1;
+    public isRunning: boolean = false;
 
     public questionCards: string[] = [];
     public questionCardsBurned: string[] = [];
@@ -62,7 +64,11 @@ export default class Game {
             secondsPerRound: this.secondsPerRound,
             cardDecks: this.cardDecks,
             houseRules: this.houseRules,
-            players: players
+            players: players,
+            isRunning: this.isRunning,
+            activeQuestionCard: this.activeQuestionCard,
+            questionCards: this.questionCards.length,
+            wordCards: this.wordCards.length
         };
     }
 
@@ -81,6 +87,27 @@ export default class Game {
         delete this.clients[key];
         this.sendChangeGame();
         // TODO: wenn Host verschwindet, neuen Host bestimmen
+        // TODO: wenn Raum leer ist, Raum löschen
+    }
+
+    public generateDecks() {
+        let questionCards: string[] = [];
+        let wordCards: string[] = [];
+
+        console.log(this.cardDecks);
+        for (let key in this.cardDecks) {
+            let deckNumber: number = parseInt(this.cardDecks[key]);
+            if (Deck.decks[deckNumber] == null) {
+                continue;
+            }
+
+            let deck = Deck.decks[deckNumber];
+            questionCards = questionCards.concat(deck.questionCards);
+            wordCards = wordCards.concat(deck.wordCards);
+        }
+
+        this.questionCards = this.shuffle(questionCards);
+        this.wordCards = this.shuffle(wordCards);
     }
 
     static getGame(gameID: string): Game | null {
