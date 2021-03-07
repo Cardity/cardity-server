@@ -1,11 +1,17 @@
+import Deck from "./game/deck";
 import HTTPServer from "./server/httpServer";
 import HTTPSServer from "./server/httpsServer";
 import WebsocketServer from "./server/websocketServer";
 
 export default class Program {
     run() {
+        this.initializeDecks();
         this.startHttpServer();
         this.startHttpsServer();
+    }
+
+    protected initializeDecks() {
+        Deck.initialize();
     }
 
     protected startHttpServer() {
