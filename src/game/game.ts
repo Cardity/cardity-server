@@ -110,6 +110,53 @@ export default class Game {
         this.wordCards = this.shuffle(wordCards);
     }
 
+    public selectCardZcar() {
+        let firstKey: string = "";
+        let nextIsZcar: boolean = false;
+        let zcarIsSet: boolean = false;
+        let i = 0;
+        for (let key in this.clients) {
+            if (i == 0) {
+                firstKey = key;
+            }
+            if (this.clients[key].isCardCzar) {
+                this.clients[key].isCardCzar = false;
+                nextIsZcar = true;
+            } else if (nextIsZcar) {
+                this.clients[key].isCardCzar = true;
+                nextIsZcar = false;
+                zcarIsSet = true;
+                break;
+            }
+
+            i++;
+        }
+        if (!zcarIsSet && this.clients[firstKey] != null) {
+            this.clients[firstKey].isCardCzar = true;
+        }
+    }
+
+    public drawCards() {
+        for (let key in this.clients) {
+            let maxDraw = 10 - this.clients[key].wordCards.length;
+            if (maxDraw) {
+                let cards: string[] = this.wordCards.splice(0, maxDraw);
+                this.clients[key].wordCards = this.clients[key].wordCards.concat(cards);
+            }
+            this.clients[key].send("DRAW_CARDS", {
+                cards: this.clients[key].wordCards
+            });
+        }
+
+        if (this.activeQuestionCard.length > 0) {
+            this.questionCardsBurned.push(this.activeQuestionCard);
+        }
+        let questionCard = this.questionCards.splice(0, 1).find((value: string) => true);
+        if (questionCard != null) {
+            this.activeQuestionCard = questionCard;
+        }
+    }
+
     static getGame(gameID: string): Game | null {
         return Game.games[gameID];
     }
@@ -120,5 +167,11 @@ export default class Game {
             [arr[i], arr[j]] = [arr[j], arr[i]];
         }
         return arr;
+    }
+
+    public startPhase1() {
+        this.selectCardZcar();
+        this.drawCards();
+        this.sendChangeGame();
     }
 }
