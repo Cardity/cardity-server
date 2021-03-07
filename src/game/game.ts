@@ -236,7 +236,15 @@ export default class Game {
         }
 
         this.selectedCards = selectedCards;
-        console.log(this.selectedCards);
+        if (!Object.keys(this.selectedCards).length) {
+            this.sendAll("PLAYER_WON", {
+                name: "Niemand",
+                key: ""
+            })
+
+            this.startPhase4();
+            return;
+        }
 
         this.sendChangeGame();
     }

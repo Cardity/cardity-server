@@ -271,7 +271,12 @@ export default class ClientRequestHandler {
 
         let winnerClient = this.data["selectedCardGroup"];
         if (game.clients[winnerClient] == null) {
-            // TODO: was machen wenn der Client disconnected ist, der gewinnen würde
+            game.sendAll("PLAYER_WON", {
+                name: "Niemand",
+                key: ""
+            })
+
+            game.startPhase4();
             return;
         }
 
