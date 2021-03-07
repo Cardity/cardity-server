@@ -235,7 +235,15 @@ export default class Game {
             selectedCards[key] = cardString;
         }
 
-        this.selectedCards = selectedCards;
+        let keys: string[] = Object.keys(selectedCards);
+        keys = this.shuffle(keys);
+
+        let selectedCardsNew: { [key: string]: string } = {};
+        for (let i in keys) {
+            selectedCardsNew[keys[i]] = selectedCards[keys[i]];
+        }
+
+        this.selectedCards = selectedCardsNew;
         if (!Object.keys(this.selectedCards).length) {
             this.sendAll("PLAYER_WON", {
                 name: "Niemand",
