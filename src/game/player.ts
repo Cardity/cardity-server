@@ -10,6 +10,9 @@ export default class Player {
     public gameID: string = "";
     public name: string = "";
     public lastHeartbeat: number = 0;
+    public isCardCzar: boolean = false;
+    public points: number = 0;
+    public wordCards: string[] = [];
 
     constructor(playerKey: string, socket: WebSocket) {
         this.playerKey = playerKey;
@@ -40,7 +43,10 @@ export default class Player {
         return {
             key: this.playerKey,
             gameID: this.gameID,
-            name: this.name
+            name: this.name,
+            points: this.points,
+            isCardCzar: this.isCardCzar,
+            wordCards: this.wordCards
         }
     }
 

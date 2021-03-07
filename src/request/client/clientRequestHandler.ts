@@ -42,6 +42,7 @@ export default class ClientRequestHandler {
 
     protected createGameHandler(): { [key: string]: any } {
         let gameID: string = CryptoUtil.createRandomString();
+        // TODO: check if game not exists
         let game: Game = new Game(gameID, this.player.getKey());
         let nickname: string = CryptoUtil.createRandomString(8);
         if (this.data != null) {

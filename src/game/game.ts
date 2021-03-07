@@ -1,5 +1,13 @@
 import Player from "./player";
 
+interface IPlayer {
+    key: string;
+    name: string;
+    isCardCzar: boolean;
+    points: number;
+    isHost: boolean;
+}
+
 export default class Game {
     public static games: { [gameID: string]: Game } = {};
 
@@ -11,6 +19,12 @@ export default class Game {
     public secondsPerRound: number = 90;
     public cardDecks: string[] = ["1"];
     public houseRules: number = 1;
+
+    public questionCards: string[] = [];
+    public questionCardsBurned: string[] = [];
+    public wordCards: string[] = [];
+    public wordCardsBurned: string[] = [];
+    public activeQuestionCard: string = "";
 
     constructor(gameID: string, hostKey: string) {
         this.gameID = gameID;
@@ -28,10 +42,16 @@ export default class Game {
     }
 
     public getObject(): { [key: string]: any } {
-        let players: { [key: string]: string } = {};
+        let players: { [key: string]: IPlayer } = {};
         for (let key in this.clients) {
             let client: Player = this.clients[key];
-            players[client.getKey()] = client.name;
+            players[client.getKey()] = {
+                key: client.getKey(),
+                name: client.name,
+                isCardCzar: client.isCardCzar,
+                points: client.points,
+                isHost: client.isHost()
+            };
         }
 
         return {
@@ -60,9 +80,18 @@ export default class Game {
 
         delete this.clients[key];
         this.sendChangeGame();
+        // TODO: wenn Host verschwindet, neuen Host bestimmen
     }
 
     static getGame(gameID: string): Game | null {
         return Game.games[gameID];
+    }
+
+    protected shuffle(arr: string[]): string[] {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
     }
 }
