@@ -210,10 +210,11 @@ export default class ClientRequestHandler {
         if (game == null) {
             return;
         }
+
+        game.sendAll("START_GAME", null);
+        
         game.isRunning = true;
         game.generateDecks();
         game.startPhase1();
-
-        game.sendAll("START_GAME", null);
     }
 }

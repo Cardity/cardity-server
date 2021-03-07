@@ -22,4 +22,5 @@ Spielphasen:
 2. Spieler, die nicht Kartenzar sind, wählen Karten
 3. Kartenzar wählt welche Karte am besten passt, restlichen werden auf Wegwerfstabel geleggt
 4. Punkt wird an gewählte Person verteilt
+    - wenn keine schwarzen Karten mehr, Spiel beenden und Gewinner erklären
 5. Phase 1 beginnt

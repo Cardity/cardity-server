@@ -27,6 +27,9 @@ export default class Game {
     public wordCards: string[] = [];
     public wordCardsBurned: string[] = [];
     public activeQuestionCard: string = "";
+    public phase: number = 0;
+
+    protected roundTimeOut: NodeJS.Timeout | null = null;
 
     constructor(gameID: string, hostKey: string) {
         this.gameID = gameID;
@@ -68,7 +71,8 @@ export default class Game {
             isRunning: this.isRunning,
             activeQuestionCard: this.activeQuestionCard,
             questionCards: this.questionCards.length,
-            wordCards: this.wordCards.length
+            wordCards: this.wordCards.length,
+            phase: this.phase
         };
     }
 
@@ -137,6 +141,7 @@ export default class Game {
     }
 
     public drawCards() {
+        // TODO: wenn Karten leer, werden Karten aus Wegwerfstabel genommen, neu gemischt und auf Kartenstapel gelegt
         for (let key in this.clients) {
             let maxDraw = 10 - this.clients[key].wordCards.length;
             if (maxDraw) {
@@ -151,9 +156,17 @@ export default class Game {
         if (this.activeQuestionCard.length > 0) {
             this.questionCardsBurned.push(this.activeQuestionCard);
         }
-        let questionCard = this.questionCards.splice(0, 1).find((value: string) => true);
-        if (questionCard != null) {
-            this.activeQuestionCard = questionCard;
+        while (true) {
+            let questionCard = this.questionCards.splice(0, 1).find((value: string) => true);
+            if (questionCard != null) {
+                let length: number = (questionCard.match(/\_\_\_/g) || []).length;
+                this.activeQuestionCard = questionCard;
+                if (length >= 1 || length <= 2) {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
     }
 
@@ -169,9 +182,23 @@ export default class Game {
         return arr;
     }
 
+    protected phase2TimeoutEnd() {
+        // TODO: implement
+    }
+
     public startPhase1() {
+        this.phase = 1;
         this.selectCardZcar();
         this.drawCards();
+        this.sendChangeGame();
+
+        this.startPhase2();
+    }
+
+    public startPhase2() {
+        this.phase = 2;
+        this.roundTimeOut = setTimeout(this.phase2TimeoutEnd.bind(this), this.secondsPerRound * 1000);
+
         this.sendChangeGame();
     }
 }
