@@ -27,6 +27,7 @@ export default class Game {
     public wordCards: string[] = [];
     public wordCardsBurned: string[] = [];
     public activeQuestionCard: string = "";
+    public selectedCards: { [key: string]: string } = {};
     public phase: number = 0;
 
     protected roundTimeOut: NodeJS.Timeout | null = null;
@@ -44,6 +45,12 @@ export default class Game {
 
     public sendChangeGame() {
         this.sendAll("CHANGE_GAME", this.getObject());
+    }
+
+    public sendChangePlayer() {
+        for(let key in this.clients) {
+            this.clients[key].sendChangePlayer();
+        }
     }
 
     public getObject(): { [key: string]: any } {
@@ -72,7 +79,8 @@ export default class Game {
             activeQuestionCard: this.activeQuestionCard,
             questionCards: this.questionCards.length,
             wordCards: this.wordCards.length,
-            phase: this.phase
+            phase: this.phase,
+            selectedCards: this.selectedCards
         };
     }
 
@@ -148,9 +156,7 @@ export default class Game {
                 let cards: string[] = this.wordCards.splice(0, maxDraw);
                 this.clients[key].wordCards = this.clients[key].wordCards.concat(cards);
             }
-            this.clients[key].send("DRAW_CARDS", {
-                cards: this.clients[key].wordCards
-            });
+            this.clients[key].sendChangePlayer();
         }
 
         if (this.activeQuestionCard.length > 0) {
@@ -184,6 +190,7 @@ export default class Game {
 
     protected phase2TimeoutEnd() {
         // TODO: implement
+        this.startPhase3();
     }
 
     public startPhase1() {
@@ -200,5 +207,70 @@ export default class Game {
         this.roundTimeOut = setTimeout(this.phase2TimeoutEnd.bind(this), this.secondsPerRound * 1000);
 
         this.sendChangeGame();
+    }
+
+    public startPhase3() {
+        if (this.roundTimeOut != null) {
+            clearTimeout(this.roundTimeOut);
+        }
+
+        this.phase = 3;
+        let selectedCards: { [key: string]: string } = {};
+        for (let key in this.clients) {
+            let client = this.clients[key];
+
+            if (!client.selectedCards.length) {
+                continue;
+            }
+
+            let cardString: string = this.activeQuestionCard;
+            for (let i in client.selectedCards) {
+                let playerSelectedCards = client.selectedCards[i];
+                if (client.wordCards[playerSelectedCards] == null) {
+                    return;
+                }
+                cardString = cardString.replace("___", "<span style='color: green'>" + client.wordCards[playerSelectedCards] + "</span>");
+            }
+
+            selectedCards[key] = cardString;
+        }
+
+        this.selectedCards = selectedCards;
+        console.log(this.selectedCards);
+
+        this.sendChangeGame();
+    }
+
+    public startPhase4() {
+        this.phase = 4;
+
+        this.sendChangeGame();
+
+        // TODO: aufräumen und phase 1 starten
+
+        // cleanup question cards
+        this.questionCardsBurned.push(this.activeQuestionCard);
+        this.activeQuestionCard = "";
+
+        // cleanup used cards
+        for (let key in this.clients) {
+            let client: Player = this.clients[key];
+            if (!client.selectedCards.length) {
+                continue;
+            }
+
+            for (let i in client.selectedCards) {
+                let selectCardIndex: number = client.selectedCards[i];
+                let selectedCardArr: string[] = client.wordCards.splice(selectCardIndex, 1);
+                if (selectedCardArr.length) 
+                {
+                    this.wordCardsBurned.concat(selectedCardArr);
+                }
+            }
+
+            client.selectedCards = [];
+        }
+
+        this.startPhase1();
     }
 }

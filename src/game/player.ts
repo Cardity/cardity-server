@@ -13,6 +13,7 @@ export default class Player {
     public isCardCzar: boolean = false;
     public points: number = 0;
     public wordCards: string[] = [];
+    public selectedCards: number[] = [];
 
     constructor(playerKey: string, socket: WebSocket) {
         this.playerKey = playerKey;
@@ -48,6 +49,10 @@ export default class Player {
             isCardCzar: this.isCardCzar,
             wordCards: this.wordCards
         }
+    }
+
+    public sendChangePlayer() {
+        this.send("CHANGE_PLAYER", this.getObject());
     }
 
     public setPlayername(name: string) {

@@ -40,6 +40,14 @@ export default class ClientRequestHandler {
                 this.startGameHandler();
                 break;
             }
+            case "SELECT_CARDS": {
+                this.selectCardsHandler();
+                break;
+            }
+            case "SELECT_CARD_GROUP": {
+                this.selectCardGroup();
+                break;
+            }
         }
         return returnData;
     }
@@ -216,5 +224,62 @@ export default class ClientRequestHandler {
         game.isRunning = true;
         game.generateDecks();
         game.startPhase1();
+    }
+
+    protected selectCardsHandler() {
+        if (this.data == null || this.data["selectedCards"] == null) {
+            return;
+        }
+        
+        let game = this.player.getGame();
+        if (game == null) {
+            return;
+        }
+        if (game.phase != 2) {
+            return;
+        }
+
+        this.player.selectedCards = this.data["selectedCards"];
+
+        let allSelected = true;
+        for (let key in game.clients) {
+            if (game.clients[key].isCardCzar) {
+                continue;
+            }
+            if (game.clients[key].selectedCards.length == 0) {
+                allSelected = false;
+            }
+        }
+
+        if (allSelected) {
+            game.startPhase3();
+        }
+    }
+
+    protected selectCardGroup() {
+        if (this.data == null || this.data["selectedCardGroup"] == null) {
+            return;
+        }
+
+        let game = this.player.getGame();
+        if (game == null) {
+            return;
+        }
+        if (game.phase != 3) {
+            return;
+        }
+
+        let winnerClient = this.data["selectedCardGroup"];
+        if (game.clients[winnerClient] == null) {
+            // TODO: was machen wenn der Client disconnected ist, der gewinnen würde
+            return;
+        }
+
+        game.clients[winnerClient].points++;
+        game.sendAll("PLAYER_WON", {
+            name: game.clients[winnerClient].name
+        })
+        // TODO: anzeigen wer gewonnen hat
+        game.startPhase4();
     }
 }
