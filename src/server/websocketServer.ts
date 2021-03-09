@@ -1,32 +1,42 @@
 import { IncomingMessage } from "http";
 import * as https from "https";
-import * as WebSocket from 'ws';
+import { Server as SocketIOServer, Socket as SocketIOSocket } from "socket.io";
+import { createAdapter } from "socket.io-redis";
 import Player from "../game/player";
+// import Player from "../game/player";
+import Program from "../program";
 import MessageHandler from "../request/messageHandler";
 import DateUtil from "../util/dateUtil";
 
 export default class WebsocketServer {
-    static server: WebSocket.Server;
+    static server: SocketIOServer;
 
     constructor(server: https.Server) {
-        WebsocketServer.server = new WebSocket.Server({ server: server });
+        let redisClient1 = Program.getRedis();
+        let redisClient2 = redisClient1.duplicate();
+
+        WebsocketServer.server = new SocketIOServer(server, {
+            adapter: createAdapter({
+                pubClient: redisClient1,
+                subClient: redisClient2
+            })
+        });
         WebsocketServer.server.on("connection", this.onConnection.bind(this));
 
         console.log("Websocket-Server started...")
     }
 
-    protected onConnection(socket: WebSocket, req: IncomingMessage) {
-        if (typeof req.headers["sec-websocket-key"] !== "string") {
-            socket.close();
-            return;
-        }
-        
-        let key: string = req.headers["sec-websocket-key"];
-        Player.players[key] = new Player(key, socket);
+    protected async onConnection(socket: SocketIOSocket) {        
+        let key: string = socket.id;
 
-        socket.on("message", function(data: WebSocket.Data) {
+        let player: Player = new Player(key);
+        player.socket = socket;
+
+        console.log("socket with id " + key + " connected");
+
+        socket.on("message", function(data: any) {
             try {
-                let messageHandler = new MessageHandler(Player.players[key], data);
+                let messageHandler = new MessageHandler(player, data);
                 messageHandler.handle();
             } catch (e: unknown) {
                 if (typeof e === "string") {
@@ -37,36 +47,13 @@ export default class WebsocketServer {
             }
         });
 
-        socket.on("close", function(code: number, reason: string) {
-            console.log("client closed: (" + code + ") " + reason);
-            if (Player.players[key] != null) {
-                Player.players[key].getGame()?.removePlayer(key);
-                delete Player.players[key];
-            }
+        socket.on("disconnecting", function(reason: string) {
+            console.log("client closed: " + reason);
+            player.remove();
+        //     if (Player.players[key] != null) {
+        //         Player.players[key].getGame()?.removePlayer(key);
+        //         delete Player.players[key];
+        //     }
         });
-
-        setTimeout(this.heartbeatCheck.bind(this), 50000, socket, key);
-    }
-
-    protected heartbeatCheck(socket: WebSocket, key: string) {
-        if (socket.readyState != WebSocket.OPEN) {
-            if (Player.players[key] != null) {
-                delete Player.players[key];
-            }
-            return;
-        }
-
-        if (Player.players[key] == null) {
-            socket.close();
-            return;
-        }
-
-        if (Player.players[key].lastHeartbeat + 50 < DateUtil.getCurrentTimestamp()) {
-            socket.close();
-            delete Player.players[key];
-            return;
-        }
-
-        setTimeout(this.heartbeatCheck.bind(this), 50000, socket, key);
     }
 }

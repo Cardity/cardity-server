@@ -1,4 +1,6 @@
 import Deck from "./deck";
+import Program from "../program";
+import WebsocketServer from "../server/websocketServer";
 import Player from "./player";
 
 interface IPlayer {
@@ -10,11 +12,9 @@ interface IPlayer {
 }
 
 export default class Game {
-    public static games: { [gameID: string]: Game } = {};
-
     public gameID: string;
     public hostKey: string;
-    public clients: { [key: string]: Player } = {};
+    public players: string[] = [];
     public password: string = "";
     public maxPlayers: number = 10;
     public secondsPerRound: number = 90;
@@ -32,37 +32,144 @@ export default class Game {
 
     protected roundTimeOut: NodeJS.Timeout | null = null;
 
-    constructor(gameID: string, hostKey: string) {
+    constructor(gameID: string, hostKey: string = "") {
         this.gameID = gameID;
         this.hostKey = hostKey;
     }
 
+    public async saveData(): Promise<void> {
+        let data = {
+            gameID: this.gameID,
+            hostKey: this.hostKey,
+            players: this.players,
+            password: this.password,
+            maxPlayers: this.maxPlayers,
+            secondsPerRound: this.secondsPerRound,
+            cardDecks: this.cardDecks,
+            houseRules: this.houseRules,
+            isRunning: this.isRunning,
+            questionCards: this.questionCards,
+            questionCardsBurned: this.questionCardsBurned,
+            wordCards: this.wordCards,
+            wordCardsBurned: this.wordCardsBurned,
+            activeQuestionCard: this.activeQuestionCard,
+            selectedCards: this.selectedCards,
+            phase: this.phase
+        }
+        await Program.getRedis().setAsync("game" + this.gameID, JSON.stringify(data));
+    }
+
+    public static async getGame(gameID: string): Promise<Game> {
+        let game = new Game(gameID);
+        await game.updateLocalData();
+        return game;
+    }
+
+    public static async gameExists(gameID: string): Promise<boolean> {
+        let gameJson = await Program.getRedis().getAsync("game" + gameID);
+        return (gameJson != null);
+    }
+
+    public async updateLocalData(): Promise<void> {
+        let gameJson = await Program.getRedis().getAsync("game" + this.gameID);
+        if (gameJson == null) {
+            await this.saveData();
+            return;
+        }
+        let gameData = JSON.parse(gameJson);
+        for (let key in gameData) {
+            switch (key) {
+                case "hostKey": {
+                    this.hostKey = gameData[key];
+                    break;
+                }
+                case "players": {
+                    this.players = gameData[key];
+                    break;
+                }
+                case "password": {
+                    this.password = gameData[key];
+                    break;
+                }
+                case "maxPlayers": {
+                    this.maxPlayers = gameData[key];
+                    break;
+                }
+                case "secondsPerRound": {
+                    this.secondsPerRound = gameData[key];
+                    break;
+                }
+                case "cardDecks": {
+                    this.cardDecks = gameData[key];
+                    break;
+                }
+                case "houseRules": {
+                    this.houseRules = gameData[key];
+                    break;
+                }
+                case "isRunning": {
+                    this.isRunning = gameData[key];
+                    break;
+                }
+                case "questionCards": {
+                    this.questionCards = gameData[key];
+                    break;
+                }
+                case "questionCardsBurned": {
+                    this.questionCardsBurned = gameData[key];
+                    break;
+                }
+                case "wordCards": {
+                    this.wordCards = gameData[key];
+                    break;
+                }
+                case "wordCardsBurned": {
+                    this.wordCardsBurned = gameData[key];
+                    break;
+                }
+                case "activeQuestionCard": {
+                    this.activeQuestionCard = gameData[key];
+                    break;
+                }
+                case "selectedCards": {
+                    this.selectedCards = gameData[key];
+                    break;
+                }
+                case "phase": {
+                    this.phase = gameData[key];
+                    break;
+                }
+            }
+        }
+    }
+
     public sendAll(type: string | null, data: { [key: string]: any } | null) {
-        for(let key in this.clients) {
-            this.clients[key].send(type, data);
+        let responseData: { [key: string]: any } = {}
+        if (type != null && type && type.length > 0) {
+            responseData["t"] = type;
         }
-    }
-
-    public sendChangeGame() {
-        this.sendAll("CHANGE_GAME", this.getObject());
-    }
-
-    public sendChangePlayer() {
-        for(let key in this.clients) {
-            this.clients[key].sendChangePlayer();
+        if (data != null) {
+            responseData["d"] = data;
         }
+        WebsocketServer.server.to("game" + this.gameID).emit("message", responseData);
     }
 
-    public getObject(): { [key: string]: any } {
+    public async sendChangeGame() {
+        let data = await this.getObject();
+        this.sendAll("CHANGE_GAME", data);
+    }
+
+    public async getObject(): Promise<{ [key: string]: any }> {
         let players: { [key: string]: IPlayer } = {};
-        for (let key in this.clients) {
-            let client: Player = this.clients[key];
-            players[client.getKey()] = {
-                key: client.getKey(),
-                name: client.name,
-                isCardCzar: client.isCardCzar,
-                points: client.points,
-                isHost: client.isHost()
+        for (let key in this.players) {
+            let playerKey: string = this.players[key];
+            let player = await Player.getPlayer(playerKey);
+            players[player.playerKey] = {
+                key: player.playerKey,
+                name: player.name,
+                isCardCzar: player.isCardCzar,
+                points: player.points,
+                isHost: player.isHost
             };
         }
 
@@ -84,35 +191,50 @@ export default class Game {
         };
     }
 
-    public addPlayer(player: Player) {
-        this.clients[player.getKey()] = player;
+    public async addPlayer(player: Player, send: boolean = true) {
+        this.players.push(player.playerKey);
         player.gameID = this.gameID;
+
+        player.socket?.join("game" + this.gameID);
 
         // TODO: was wenn Spiel schon läuft?
 
-        this.sendChangeGame();
+        if (send) {
+            await this.saveData();
+            await this.sendChangeGame();
+        }
     }
 
-    public removePlayer(key: string) {
-        if (this.clients[key] == null) {
+    public async removePlayer(key: string) {
+        if (!this.players.includes(key)) {
             return;
         }
 
         let isHost = false;
-        if (this.clients[key].getKey() == this.hostKey) {
+        if (key == this.hostKey) {
             isHost = true;
         }
 
-        delete this.clients[key];
+        let i = this.players.indexOf(key);
+        if (i > -1) {
+            this.players.splice(i, 1);
+        }
 
         if (isHost) {
-            let hostKey: string | undefined = Object.keys(this.clients).find((value: string) => true);
+            let hostKey: string | undefined = this.players.find((value: string) => true);
             if (hostKey != null) {
+                let player: Player = await Player.getPlayer(hostKey);
+                player.isHost = true;
+                await player.saveData();
+                player.sendChangePlayer();
+
                 this.hostKey = hostKey;
             }
         }
 
-        this.sendChangeGame();
+        await this.saveData();
+
+        await this.sendChangeGame();
         // TODO: wenn Raum leer ist, Raum löschen
         // TODO: was wenn Kartenzar Raum verlässt, während er Karten auswählt?
         // TODO: Karten wieder in Deck einfügen wenn Spieler raus ist
@@ -123,7 +245,6 @@ export default class Game {
         let questionCards: string[] = [];
         let wordCards: string[] = [];
 
-        console.log(this.cardDecks);
         for (let key in this.cardDecks) {
             let deckNumber: number = parseInt(this.cardDecks[key]);
             if (Deck.decks[deckNumber] == null) {
@@ -137,43 +258,54 @@ export default class Game {
 
         this.questionCards = this.shuffle(questionCards);
         this.wordCards = this.shuffle(wordCards);
+
+        this.saveData();
     }
 
-    public selectCardZcar() {
-        let firstKey: string = "";
+    public async selectCardZcar() {
+        let firstPlayer: Player | null = null;
         let nextIsZcar: boolean = false;
         let zcarIsSet: boolean = false;
         let i = 0;
-        for (let key in this.clients) {
+        for (let key in this.players) {
+            let player = await Player.getPlayer(this.players[key]);
             if (i == 0) {
-                firstKey = key;
+                firstPlayer = player;
             }
-            if (this.clients[key].isCardCzar) {
-                this.clients[key].isCardCzar = false;
+            if (player.isCardCzar) {
+                player.isCardCzar = false;
                 nextIsZcar = true;
+                await player.saveData();
+                player.sendChangePlayer();
             } else if (nextIsZcar) {
-                this.clients[key].isCardCzar = true;
+                player.isCardCzar = true;
                 nextIsZcar = false;
                 zcarIsSet = true;
+                await player.saveData();
+                player.sendChangePlayer();
                 break;
             }
 
             i++;
         }
-        if (!zcarIsSet && this.clients[firstKey] != null) {
-            this.clients[firstKey].isCardCzar = true;
+        if (!zcarIsSet && firstPlayer != null) {
+            firstPlayer.isCardCzar = true;
+            await firstPlayer.saveData();
+            firstPlayer.sendChangePlayer();
         }
     }
 
-    public drawCards() {
+    public async drawCards() {
         // TODO: wenn Karten leer, werden Karten aus Wegwerfstabel genommen, neu gemischt und auf Kartenstapel gelegt
-        for (let key in this.clients) {
-            let maxDraw = 10 - this.clients[key].wordCards.length;
+        for (let key in this.players) {
+            let player: Player = await Player.getPlayer(this.players[key]);
+            let maxDraw = 10 - player.wordCards.length;
             if (maxDraw) {
                 let cards: string[] = this.wordCards.splice(0, maxDraw);
-                this.clients[key].wordCards = this.clients[key].wordCards.concat(cards);
+                player.wordCards = player.wordCards.concat(cards);
             }
-            this.clients[key].sendChangePlayer();
+            await player.saveData();
+            player.sendChangePlayer();
         }
 
         if (this.activeQuestionCard.length > 0) {
@@ -193,10 +325,6 @@ export default class Game {
         }
     }
 
-    static getGame(gameID: string): Game | null {
-        return Game.games[gameID];
-    }
-
     protected shuffle(arr: string[]): string[] {
         for (let i = arr.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -205,51 +333,55 @@ export default class Game {
         return arr;
     }
 
-    protected phase2TimeoutEnd() {
+    protected async phase2TimeoutEnd() {
+        await this.updateLocalData();
+        if (this.phase != 2) {
+            return;
+        }
+
         // TODO: implement
         this.startPhase3();
     }
 
-    public startPhase1() {
+    public async startPhase1() {
         this.phase = 1;
-        this.selectCardZcar();
-        this.drawCards();
-        this.sendChangeGame();
+        await this.selectCardZcar();
+        await this.drawCards();
+
+        await this.saveData();
+        await this.sendChangeGame();
 
         this.startPhase2();
     }
 
-    public startPhase2() {
+    public async startPhase2() {
         this.phase = 2;
         this.roundTimeOut = setTimeout(this.phase2TimeoutEnd.bind(this), this.secondsPerRound * 1000);
 
-        this.sendChangeGame();
+        await this.saveData();
+        await this.sendChangeGame();
     }
 
-    public startPhase3() {
-        if (this.roundTimeOut != null) {
-            clearTimeout(this.roundTimeOut);
-        }
-
+    public async startPhase3() {
         this.phase = 3;
         let selectedCards: { [key: string]: string } = {};
-        for (let key in this.clients) {
-            let client = this.clients[key];
+        for (let key in this.players) {
+            let player: Player = await Player.getPlayer(this.players[key]);
 
-            if (!client.selectedCards.length) {
+            if (!player.selectedCards.length) {
                 continue;
             }
 
             let cardString: string = this.activeQuestionCard;
-            for (let i in client.selectedCards) {
-                let playerSelectedCards = client.selectedCards[i];
-                if (client.wordCards[playerSelectedCards] == null) {
-                    return;
+            for (let i in player.selectedCards) {
+                let playerSelectedCards = player.selectedCards[i];
+                if (player.wordCards[playerSelectedCards] == null) {
+                    continue;
                 }
-                cardString = cardString.replace("___", "<span style='color: green'>" + client.wordCards[playerSelectedCards] + "</span>");
+                cardString = cardString.replace("___", "<span style='color: green'>" + player.wordCards[playerSelectedCards] + "</span>");
             }
 
-            selectedCards[key] = cardString;
+            selectedCards[this.players[key]] = cardString;
         }
 
         let keys: string[] = Object.keys(selectedCards);
@@ -271,36 +403,41 @@ export default class Game {
             return;
         }
 
-        this.sendChangeGame();
+        await this.saveData();
+        await this.sendChangeGame();
     }
 
-    public startPhase4() {
+    public async startPhase4() {
         this.phase = 4;
 
-        this.sendChangeGame();
+        await this.sendChangeGame();
 
         // cleanup question cards
         this.questionCardsBurned.push(this.activeQuestionCard);
         this.activeQuestionCard = "";
 
         // cleanup used cards
-        for (let key in this.clients) {
-            let client: Player = this.clients[key];
-            if (!client.selectedCards.length) {
+        for (let key in this.players) {
+            let player: Player = await Player.getPlayer(this.players[key]);
+            if (!player.selectedCards.length) {
                 continue;
             }
 
-            for (let i in client.selectedCards) {
-                let selectCardIndex: number = client.selectedCards[i];
-                let selectedCardArr: string[] = client.wordCards.splice(selectCardIndex, 1);
+            for (let i in player.selectedCards) {
+                let selectCardIndex: number = player.selectedCards[i];
+                let selectedCardArr: string[] = player.wordCards.splice(selectCardIndex, 1);
                 if (selectedCardArr.length) 
                 {
                     this.wordCardsBurned.concat(selectedCardArr);
                 }
             }
 
-            client.selectedCards = [];
+            player.selectedCards = [];
+            await player.saveData();
+            player.sendChangePlayer();
         }
+
+        await this.saveData();
 
         // TODO: Endgame wenn alle schwarzen Karten aufgebraucht sind
 
