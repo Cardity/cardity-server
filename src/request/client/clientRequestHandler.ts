@@ -1,5 +1,7 @@
+import { Socket as SocketIOSocket } from "socket.io";
 import Game from "../../game/game";
 import Player from "../../game/player";
+import WebsocketServer from "../../server/websocketServer";
 import CryptoUtil from "../../util/cryptoUtil";
 
 export default class ClientRequestHandler {
@@ -13,19 +15,18 @@ export default class ClientRequestHandler {
         this.data = data;
     }
 
-    public handle(): { [key: string]: any } | null {
-        let returnData: { [key: string]: any } | null = null; 
+    public handle() {
         switch (this.type) {
             case "CREATE_GAME": {
-                returnData = this.createGameHandler()
+                this.createGameHandler()
                 break;
             }
             case "GAME_UPDATE": {
-                returnData = this.gameUpdateHandler()
+                this.gameUpdateHandler()
                 break;
             }
             case "JOIN_GAME": {
-                returnData = this.joinGameHandler()
+                this.joinGameHandler()
                 break;
             }
             case "KICK_PLAYER": {
@@ -49,13 +50,12 @@ export default class ClientRequestHandler {
                 break;
             }
         }
-        return returnData;
     }
 
-    protected createGameHandler(): { [key: string]: any } {
+    protected async createGameHandler() {
         let gameID: string = CryptoUtil.createRandomString();
         // TODO: check if game not exists
-        let game: Game = new Game(gameID, this.player.getKey());
+        let game: Game = new Game(gameID, this.player.playerKey);
         let nickname: string = CryptoUtil.createRandomString(8);
         if (this.data != null) {
             for(let key in this.data) {
@@ -87,14 +87,21 @@ export default class ClientRequestHandler {
                 }
             }
         }
-        this.player.setPlayername(nickname);
-        game.addPlayer(this.player);
+        this.player.name = nickname;
+        this.player.isHost = true;
+        this.player.gameID = gameID;
+        await this.player.saveData();
 
-        Game.games[gameID] = game;
-        return game.getObject();
+        game.addPlayer(this.player, false);
+        await game.saveData();
+
+        this.player.sendChangePlayer();
+        game.getObject().then((data: { [key: string]: any }) => {
+            this.player.send("CREATE_GAME", data);
+        });
     }
 
-    protected joinGameHandler(): { [key: string]: any } {
+    protected async joinGameHandler() {
         let nickname: string = CryptoUtil.createRandomString(8);
         let gameID: string = "";
         let password: string = "";
@@ -118,31 +125,37 @@ export default class ClientRequestHandler {
             }
         }
 
-        if (Game.games[gameID] == null) {
-            return {
+        if (!(await Game.gameExists(gameID))) {
+            this.player.send("JOIN_GAME", {
                 errorField: "gameID",
                 errorMessage: "Es existiert kein Spiel mit diesem Code."
-            }
+            });
+            return;
         }
         // TODO: checke ob Raum bereits voll ist
-        if (Game.games[gameID].password && Game.games[gameID].password !== password) {
-            return {
+        let game = await Game.getGame(gameID);
+        if (game.password && game.password !== password) {
+            this.player.send("JOIN_GAME", {
                 errorField: "password",
                 errorMessage: "Das eingegebene Passwort ist falsch."
-            }
+            });
+            return;
         }
-        this.player.setPlayername(nickname);
+        this.player.name = nickname;
+        this.player.gameID = gameID;
+        await this.player.saveData();
 
-        Game.games[gameID].addPlayer(this.player);
-        return Game.games[gameID].getObject();
+        game.addPlayer(this.player);
+        this.player.sendChangePlayer();
+        this.player.send("JOIN_GAME", {});
     }
 
-    protected kickPlayerHandler() {
-        let game: Game | null = this.player.getGame();
+    protected async kickPlayerHandler() {
+        let game: Game | null = await this.player.getGame();
         if (game == null) {
             return;
         }
-        if (!this.player.isHost()) {
+        if (!this.player.isHost) {
             return;
         }
 
@@ -154,10 +167,16 @@ export default class ClientRequestHandler {
             return;
         }
 
-        if (game.clients[removeKey] == null) {
+        if (!game.players.includes(removeKey)) {
             return;
         }
-        game.clients[removeKey].getSocket().close();
+
+        WebsocketServer.server.to(removeKey).sockets.sockets.forEach((socket: SocketIOSocket, key: string) => {
+            if (key == removeKey) {
+                console.log("should disconnect")
+                socket.disconnect();
+            }
+        });
     }
 
     protected sendChatHandler() {
@@ -169,20 +188,20 @@ export default class ClientRequestHandler {
             return;
         }
 
-        this.player.getGame()?.sendAll("CHAT_MESSAGE", {
-            isHost: this.player.isHost(),
+        this.player.sendToRoom("CHAT_MESSAGE", {
+            isHost: this.player.isHost,
             name: this.player.name,
             message: message
         });
     }
 
-    protected gameUpdateHandler(): { [key: string]: any } {
-        let game: Game | null = this.player.getGame();
+    protected async gameUpdateHandler() {
+        let game: Game | null = await this.player.getGame();
         if (game == null) {
-            return {};
+            return;
         }
-        if (!this.player.isHost()) {
-            return {};
+        if (!this.player.isHost) {
+            return;
         }
 
         if (this.data != null) {
@@ -207,14 +226,12 @@ export default class ClientRequestHandler {
                 }
             }
         }
-
+        await game.saveData();
         game.sendChangeGame();
-
-        return game.getObject();
     }
 
-    protected startGameHandler() {
-        let game = this.player.getGame();
+    protected async startGameHandler() {
+        let game = await this.player.getGame();
         if (game == null) {
             return;
         }
@@ -226,12 +243,13 @@ export default class ClientRequestHandler {
         game.startPhase1();
     }
 
-    protected selectCardsHandler() {
+    protected async selectCardsHandler() {
         if (this.data == null || this.data["selectedCards"] == null) {
             return;
         }
+        await this.player.updateLocalData();
         
-        let game = this.player.getGame();
+        let game = await this.player.getGame();
         if (game == null) {
             return;
         }
@@ -240,13 +258,20 @@ export default class ClientRequestHandler {
         }
 
         this.player.selectedCards = this.data["selectedCards"];
+        await this.player.saveData();
 
         let allSelected = true;
-        for (let key in game.clients) {
-            if (game.clients[key].isCardCzar) {
+        for (let key in game.players) {
+            if (key == this.player.playerKey) {
                 continue;
             }
-            if (game.clients[key].selectedCards.length == 0) {
+
+            let player: Player = await Player.getPlayer(game.players[key]);
+            if (player.isCardCzar) {
+                continue;
+            }
+
+            if (player.selectedCards.length == 0) {
                 allSelected = false;
             }
         }
@@ -256,12 +281,12 @@ export default class ClientRequestHandler {
         }
     }
 
-    protected selectCardGroup() {
+    protected async selectCardGroup() {
         if (this.data == null || this.data["selectedCardGroup"] == null) {
             return;
         }
 
-        let game = this.player.getGame();
+        let game = await this.player.getGame();
         if (game == null) {
             return;
         }
@@ -269,8 +294,8 @@ export default class ClientRequestHandler {
             return;
         }
 
-        let winnerClient = this.data["selectedCardGroup"];
-        if (game.clients[winnerClient] == null) {
+        let winnerKey = this.data["selectedCardGroup"];
+        if (!game.players.includes(winnerKey)) {
             game.sendAll("PLAYER_WON", {
                 name: "Niemand",
                 key: ""
@@ -280,10 +305,13 @@ export default class ClientRequestHandler {
             return;
         }
 
-        game.clients[winnerClient].points++;
+        let winner: Player = await Player.getPlayer(winnerKey);
+        winner.points++;
+        await winner.saveData();
+
         game.sendAll("PLAYER_WON", {
-            name: game.clients[winnerClient].name,
-            key: game.clients[winnerClient].getKey()
+            name: winner.name,
+            key: winner.playerKey
         })
         // TODO: anzeigen wer gewonnen hat
         game.startPhase4();

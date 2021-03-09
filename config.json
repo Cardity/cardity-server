@@ -8,5 +8,8 @@
     "hostname": "cah.testsrv.de",
     "webPath": "/Users/peterlohse/git/cah_web/dist/",
 
-    "deckPath": "/Users/peterlohse/git/cah/decks/"
+    "deckPath": "/Users/peterlohse/git/cah/decks/",
+
+    "redisHost": "localhost",
+    "redisPort": 6379
 }
