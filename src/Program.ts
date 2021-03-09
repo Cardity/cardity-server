@@ -1,4 +1,4 @@
-import * as config from "./../config.json";
+import * as config from "../config.json";
 import Deck from "./game/deck";
 import HTTPServer from "./server/httpServer";
 import HTTPSServer from "./server/httpsServer";

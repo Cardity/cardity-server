@@ -147,7 +147,7 @@ export default class ClientRequestHandler {
 
         game.addPlayer(this.player);
         this.player.sendChangePlayer();
-        this.player.send("JOIN_GAME", {});
+        this.player.send("JOIN_GAME", await game.getObject());
     }
 
     protected async kickPlayerHandler() {
