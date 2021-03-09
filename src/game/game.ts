@@ -88,6 +88,8 @@ export default class Game {
         this.clients[player.getKey()] = player;
         player.gameID = this.gameID;
 
+        // TODO: was wenn Spiel schon läuft?
+
         this.sendChangeGame();
     }
 
@@ -96,10 +98,25 @@ export default class Game {
             return;
         }
 
+        let isHost = false;
+        if (this.clients[key].getKey() == this.hostKey) {
+            isHost = true;
+        }
+
         delete this.clients[key];
+
+        if (isHost) {
+            let hostKey: string | undefined = Object.keys(this.clients).find((value: string) => true);
+            if (hostKey != null) {
+                this.hostKey = hostKey;
+            }
+        }
+
         this.sendChangeGame();
-        // TODO: wenn Host verschwindet, neuen Host bestimmen
         // TODO: wenn Raum leer ist, Raum löschen
+        // TODO: was wenn Kartenzar Raum verlässt, während er Karten auswählt?
+        // TODO: Karten wieder in Deck einfügen wenn Spieler raus ist
+        // TODO: bei jeder Spielphase testen was passiert wenn Host, Zar oder normaler Spieler disconnected
     }
 
     public generateDecks() {
@@ -262,8 +279,6 @@ export default class Game {
 
         this.sendChangeGame();
 
-        // TODO: aufräumen und phase 1 starten
-
         // cleanup question cards
         this.questionCardsBurned.push(this.activeQuestionCard);
         this.activeQuestionCard = "";
@@ -286,6 +301,8 @@ export default class Game {
 
             client.selectedCards = [];
         }
+
+        // TODO: Endgame wenn alle schwarzen Karten aufgebraucht sind
 
         setTimeout(this.startPhase1.bind(this), 10000);
     }
