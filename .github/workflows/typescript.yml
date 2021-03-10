@@ -5,9 +5,9 @@ on:
 
 jobs:
   build:
-      name: Typescript Build
+      name: Typescript
       runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v2
-        - name: PHPCS check
+        - name: Typescript Build
           uses: alexthemaster/action-build-typescript@v1.2.1
