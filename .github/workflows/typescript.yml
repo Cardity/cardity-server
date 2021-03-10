@@ -1,9 +1,13 @@
-name: Typescript compiler
-  # You may pin to the exact commit or the version.
-  # uses: iCrawl/action-tsc@c3f25c126c7805dbbbcbf6f1db0c3be6f5dac069
-  uses: iCrawl/action-tsc@v1
-  with:
-    # Optional project path.
-    project: # optional
-    # Optional build reference path.
-    build: # optional
+name: Typescript
+
+on:
+  push:
+
+jobs:
+  build:
+      name: Typescript Build
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+        - name: PHPCS check
+          uses: alexthemaster/action-build-typescript@v1.2.1
