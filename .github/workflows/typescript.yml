@@ -11,3 +11,4 @@ jobs:
         - uses: actions/checkout@v2
         - name: Typescript Build
           uses: alexthemaster/action-build-typescript@v1.2.1
+        - run: npm install
