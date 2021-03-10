@@ -9,5 +9,8 @@
     "socket.io-redis": "^6.0.1",
     "typescript": "^4.2.3",
     "utf-8-validate": "^5.0.4"
+  },
+  "scripts": {
+    "build": "tsc"
   }
 }
