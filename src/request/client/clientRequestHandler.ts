@@ -321,7 +321,6 @@ export default class ClientRequestHandler {
             name: winner.name,
             key: winner.playerKey
         })
-        // TODO: anzeigen wer gewonnen hat
         game.startPhase4();
     }
 }
