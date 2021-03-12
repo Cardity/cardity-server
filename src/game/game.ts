@@ -242,10 +242,14 @@ export default class Game {
             }
         }
 
+        if (this.players.length == 0) {
+            Program.getRedis().del("game" + this.gameID);
+            return;
+        }
+
         await this.saveData();
 
         await this.sendChangeGame();
-        // TODO: wenn Raum leer ist, Raum löschen
         // TODO: was wenn Kartenzar Raum verlässt, während er Karten auswählt?
         // TODO: Karten wieder in Deck einfügen wenn Spieler raus ist
         // TODO: bei jeder Spielphase testen was passiert wenn Host, Zar oder normaler Spieler disconnected
