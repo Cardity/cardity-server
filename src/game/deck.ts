@@ -17,6 +17,7 @@ export default class Deck {
                 fs.readFile(config.deckPath + file, (error: NodeJS.ErrnoException | null, data: Buffer) => {
                     let deck: IDeck = JSON.parse(data.toString());
                     Deck.decks[deck.key] = deck;
+                    console.log(Deck.decks);
                 })
             });
         });

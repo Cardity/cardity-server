@@ -11,6 +11,13 @@ interface IPlayer {
     isHost: boolean;
 }
 
+interface IEndWinner {
+    place: number,
+    name: string,
+    points: number,
+    isHost: boolean
+}
+
 export default class Game {
     public gameID: string;
     public hostKey: string;
@@ -29,6 +36,8 @@ export default class Game {
     public activeQuestionCard: string = "";
     public selectedCards: { [key: string]: string } = {};
     public phase: number = 0;
+
+    public endWinner: IEndWinner[] = [];
 
     protected roundTimeOut: NodeJS.Timeout | null = null;
 
@@ -187,7 +196,8 @@ export default class Game {
             questionCards: this.questionCards.length,
             wordCards: this.wordCards.length,
             phase: this.phase,
-            selectedCards: this.selectedCards
+            selectedCards: this.selectedCards,
+            endWinner: this.endWinner
         };
     }
 
@@ -439,8 +449,39 @@ export default class Game {
 
         await this.saveData();
 
-        // TODO: Endgame wenn alle schwarzen Karten aufgebraucht sind
+        if (this.questionCards.length == 0) {
+            setTimeout(this.startEndPhase.bind(this), 10000);
+        } else {
+            setTimeout(this.startPhase1.bind(this), 10000);
+        }
+    }
 
-        setTimeout(this.startPhase1.bind(this), 10000);
+    public async startEndPhase() {
+        this.phase = 5;
+
+        let endWinner: IEndWinner[] = [];
+        for (let key in this.players) {
+            let playerKey: string = this.players[key];
+            let player = await Player.getPlayer(playerKey);
+            endWinner.push({
+                place: 0,
+                name: player.name,
+                points: player.points,
+                isHost: player.isHost
+            });
+        }
+        endWinner = endWinner.sort((a: IEndWinner, b: IEndWinner) => a.points > b.points ? -1 : a.points < b.points ? 1 : 0);
+        let i = 1;
+        for (let key in endWinner) {
+            endWinner[key].place = i;
+            i++;
+        }
+
+        this.endWinner = endWinner;
+        this.isRunning = false;
+
+        await this.saveData();
+
+        await this.sendChangeGame();
     }
 }
