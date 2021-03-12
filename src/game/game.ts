@@ -250,9 +250,6 @@ export default class Game {
         await this.saveData();
 
         await this.sendChangeGame();
-        // TODO: was wenn Kartenzar Raum verlässt, während er Karten auswählt?
-        // TODO: Karten wieder in Deck einfügen wenn Spieler raus ist
-        // TODO: bei jeder Spielphase testen was passiert wenn Host, Zar oder normaler Spieler disconnected
     }
 
     public async generateDecks() {

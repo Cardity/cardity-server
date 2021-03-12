@@ -93,8 +93,20 @@ export default class Player {
     }
 
     public async remove() {
+        await this.updateLocalData();
         let game = await this.getGame();
         await game?.removePlayer(this.playerKey);
+
+        game?.wordCards.concat(this.wordCards);
+
+        if (this.isCardCzar) {
+            game?.sendAll("PLAYER_WON", {
+                name: "Niemand",
+                key: ""
+            })
+
+            game?.startPhase4();
+        }
         this.socket?.leave("game" + this.gameID);
         Program.getRedis().del("player" + this.playerKey);
     }
