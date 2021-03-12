@@ -14,10 +14,12 @@ export default class Deck {
     public static initialize() {
         fs.readdir(config.deckPath, (error: NodeJS.ErrnoException | null, files: string[]) => {
             files.forEach((file: string) => {
+                if (!file.endsWith(".json")) {
+                    return;
+                }
                 fs.readFile(config.deckPath + file, (error: NodeJS.ErrnoException | null, data: Buffer) => {
                     let deck: IDeck = JSON.parse(data.toString());
                     Deck.decks[deck.key] = deck;
-                    console.log(Deck.decks);
                 })
             });
         });

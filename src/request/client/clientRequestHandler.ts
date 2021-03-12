@@ -239,7 +239,7 @@ export default class ClientRequestHandler {
         game.sendAll("START_GAME", null);
         
         game.isRunning = true;
-        game.generateDecks();
+        await game.generateDecks();
         game.startPhase1();
     }
 

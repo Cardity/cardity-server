@@ -251,7 +251,7 @@ export default class Game {
         // TODO: bei jeder Spielphase testen was passiert wenn Host, Zar oder normaler Spieler disconnected
     }
 
-    public generateDecks() {
+    public async generateDecks() {
         let questionCards: string[] = [];
         let wordCards: string[] = [];
 
@@ -268,6 +268,20 @@ export default class Game {
 
         this.questionCards = this.shuffle(questionCards);
         this.wordCards = this.shuffle(wordCards);
+
+        this.questionCardsBurned = [];
+        this.wordCardsBurned = [];
+        this.selectedCards = {};
+        this.activeQuestionCard = "";
+
+        for (let key in this.players) {
+            let playerKey: string = this.players[key];
+            let player = await Player.getPlayer(playerKey);
+            player.points = 0;
+            player.wordCards = [];
+            player.selectedCards = [];
+            await player.saveData();
+        }
 
         this.saveData();
     }
