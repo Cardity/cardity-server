@@ -53,14 +53,15 @@ export default class ClientRequestHandler {
     }
 
     protected async createGameHandler() {
-        let gameID: string = CryptoUtil.createRandomString();
+        // TODO: Raum-ID erhöhen auf 8
+        let gameID: string = CryptoUtil.createRandomString(5);
         let gameExists = true;
         while (gameExists) {
             if (!(await Game.gameExists(gameID))) {
                 gameExists = false;
                 break;
             }
-            gameID = CryptoUtil.createRandomString();
+            gameID = CryptoUtil.createRandomString(5);
         }
         
         let game: Game = new Game(gameID, this.player.playerKey);
