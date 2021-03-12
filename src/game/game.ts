@@ -207,8 +207,6 @@ export default class Game {
 
         player.socket?.join("game" + this.gameID);
 
-        // TODO: was wenn Spiel schon läuft?
-
         if (send) {
             await this.saveData();
             await this.sendChangeGame();
@@ -364,7 +362,7 @@ export default class Game {
             return;
         }
 
-        // TODO: implement
+        // TODO: nur Phase 3 starten, wenn es noch gleiche Runde ist
         this.startPhase3();
     }
 
