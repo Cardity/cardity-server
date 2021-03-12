@@ -140,12 +140,18 @@ export default class ClientRequestHandler {
             });
             return;
         }
-        // TODO: checke ob Raum bereits voll ist
         let game = await Game.getGame(gameID);
         if (game.password && game.password !== password) {
             this.player.send("JOIN_GAME", {
                 errorField: "password",
                 errorMessage: "Das eingegebene Passwort ist falsch."
+            });
+            return;
+        }
+        if (game.players.length >= game.maxPlayers) {
+            this.player.send("JOIN_GAME", {
+                errorField: "gameID",
+                errorMessage: "Das Spiel ist bereits voll."
             });
             return;
         }
