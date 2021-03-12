@@ -319,10 +319,12 @@ export default class Game {
     }
 
     public async drawCards() {
-        // TODO: wenn Karten leer, werden Karten aus Wegwerfstabel genommen, neu gemischt und auf Kartenstapel gelegt
         for (let key in this.players) {
             let player: Player = await Player.getPlayer(this.players[key]);
             let maxDraw = 10 - player.wordCards.length;
+            if (maxDraw > this.wordCards.length) {
+                this.resetWordCards();
+            }
             if (maxDraw) {
                 let cards: string[] = this.wordCards.splice(0, maxDraw);
                 player.wordCards = player.wordCards.concat(cards);
@@ -346,6 +348,11 @@ export default class Game {
                 break;
             }
         }
+    }
+
+    protected resetWordCards() {
+        this.wordCards = this.shuffle(this.wordCards.concat(this.wordCardsBurned));
+        this.wordCardsBurned = [];
     }
 
     protected shuffle(arr: string[]): string[] {
@@ -451,7 +458,7 @@ export default class Game {
                 let selectedCardArr: string[] = player.wordCards.splice(selectCardIndex, 1);
                 if (selectedCardArr.length) 
                 {
-                    this.wordCardsBurned.concat(selectedCardArr);
+                    this.wordCardsBurned = this.wordCardsBurned.concat(selectedCardArr);
                 }
             }
 
