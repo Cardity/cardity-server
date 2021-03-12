@@ -19,6 +19,8 @@ interface IEndWinner {
 }
 
 export default class Game {
+    public round: number = 0;
+
     public gameID: string;
     public hostKey: string;
     public players: string[] = [];
@@ -38,8 +40,6 @@ export default class Game {
     public phase: number = 0;
 
     public endWinner: IEndWinner[] = [];
-
-    protected roundTimeOut: NodeJS.Timeout | null = null;
 
     constructor(gameID: string, hostKey: string = "") {
         this.gameID = gameID;
@@ -63,7 +63,8 @@ export default class Game {
             wordCardsBurned: this.wordCardsBurned,
             activeQuestionCard: this.activeQuestionCard,
             selectedCards: this.selectedCards,
-            phase: this.phase
+            phase: this.phase,
+            round: this.round
         }
         await Program.getRedis().setAsync("game" + this.gameID, JSON.stringify(data));
     }
@@ -146,6 +147,10 @@ export default class Game {
                 }
                 case "phase": {
                     this.phase = gameData[key];
+                    break;
+                }
+                case "round": {
+                    this.round = gameData[key];
                     break;
                 }
             }
@@ -363,18 +368,22 @@ export default class Game {
         return arr;
     }
 
-    protected async phase2TimeoutEnd() {
+    protected async phase2TimeoutEnd(round: number) {
         await this.updateLocalData();
         if (this.phase != 2) {
             return;
         }
+        if (round != this.round) {
+            return;
+        }
 
-        // TODO: nur Phase 3 starten, wenn es noch gleiche Runde ist
         this.startPhase3();
     }
 
     public async startPhase1() {
+        await this.updateLocalData();
         this.phase = 1;
+        this.round++;
         await this.selectCardZcar();
         await this.drawCards();
 
@@ -386,7 +395,7 @@ export default class Game {
 
     public async startPhase2() {
         this.phase = 2;
-        this.roundTimeOut = setTimeout(this.phase2TimeoutEnd.bind(this), this.secondsPerRound * 1000);
+        setTimeout(this.phase2TimeoutEnd.bind(this), this.secondsPerRound * 1000, this.round);
 
         await this.saveData();
         await this.sendChangeGame();
@@ -470,9 +479,9 @@ export default class Game {
         await this.saveData();
 
         if (this.questionCards.length == 0) {
-            setTimeout(this.startEndPhase.bind(this), 10000);
+            setTimeout(this.startEndPhase.bind(this), 5000);
         } else {
-            setTimeout(this.startPhase1.bind(this), 10000);
+            setTimeout(this.startPhase1.bind(this), 5000);
         }
     }
 
