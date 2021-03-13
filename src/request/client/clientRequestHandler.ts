@@ -260,6 +260,7 @@ export default class ClientRequestHandler {
     }
 
     protected async selectCardsHandler() {
+        // TODO: Karten werden manchmal nicht korrekt aus dem Deck entfernt
         if (this.data == null || this.data["selectedCards"] == null) {
             return;
         }

@@ -137,22 +137,6 @@ export default class Player {
         WebsocketServer.server.to("game" + this.gameID).emit(operation, responseData);
     }
 
-//     public send(type: string | null, data: { [key: string]: any } | null, operation: number = 6) {
-//         let requestData: { [key: string]: any } = {
-//             "o": operation
-//         }
-//         if (type != null && type && type.length > 0) {
-//             requestData["t"] = type;
-//         }
-//         if (data != null) {
-//             requestData["d"] = data;
-//         }
-//         if (this.socket.readyState != WebSocket.OPEN) {
-//             return;
-//         }
-//         this.socket.send(JSON.stringify(requestData));
-//     }
-
     public getObject(): { [key: string]: any } {
         return {
             key: this.playerKey,
@@ -174,8 +158,4 @@ export default class Player {
         }
         return await Game.getGame(this.gameID);
     }
-
-//     public getSocket(): WebSocket {
-//         return this.socket;
-//     }
 }
