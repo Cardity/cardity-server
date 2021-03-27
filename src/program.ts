@@ -34,10 +34,19 @@ export default class Program {
     }
 
     protected startHttpsServer() {
-        let httpsServer = new HTTPSServer();
-        httpsServer.start();
+        try {
+            let httpsServer = new HTTPSServer();
+            httpsServer.start();
 
-        let secureServer = httpsServer.getServer();
-        new WebsocketServer(secureServer);
+            let secureServer = httpsServer.getServer();
+            new WebsocketServer(secureServer);
+        } catch (e: unknown) {
+            console.log("HTTPS Server not started");
+            if (typeof e === "string") {
+                console.log(e);
+            } else if (e instanceof Error) {
+                console.log(e.message);
+            }
+        }
     }
 }
