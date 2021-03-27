@@ -59,7 +59,7 @@ export default class RequestHandler {
     }
 
     protected getFile(requestFile: string): string {
-        return fs.readFileSync(requestFile).toString();
+        // return fs.readFileSync(requestFile).toString(); // TODO: comment
         if (RequestHandler.cachedFiles[requestFile] == null) {
             RequestHandler.cachedFiles[requestFile] = fs.readFileSync(requestFile).toString();
         }
