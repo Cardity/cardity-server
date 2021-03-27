@@ -21,7 +21,7 @@ export default class HTTPServer {
         filename = filename.replace("../", "");
         const requestFile: string = config.webPath + filename;
 
-        if (filename.startsWith("/.well_known/")) {
+        if (filename.startsWith("/.well-known/")) {
             let requestHandler = new RequestHandler(req, res);
             requestHandler.handle();
             return;
