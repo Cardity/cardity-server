@@ -2,13 +2,13 @@
     "httpPort": 8088,
     
     "sslPort": 8448,
-    "sslCert": "/Users/peterlohse/git/cah/ssl/fullchain.pem",
-    "sslKey": "/Users/peterlohse/git/cah/ssl/privkey.pem",
+    "sslCert": "/Users/peterlohse/git/cardity-server/ssl/fullchain.pem",
+    "sslKey": "/Users/peterlohse/git/cardity-server/ssl/privkey.pem",
 
     "hostname": "cah.testsrv.de",
-    "webPath": "/Users/peterlohse/git/cah_web/dist/",
+    "webPath": "/Users/peterlohse/git/cardity-web/dist/",
 
-    "deckPath": "/Users/peterlohse/git/cah/decks/",
+    "deckPath": "/Users/peterlohse/git/cardity-server/decks/",
 
     "redisHost": "localhost",
     "redisPort": 6379
